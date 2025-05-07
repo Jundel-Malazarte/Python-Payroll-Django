@@ -1,0 +1,169 @@
+{% extends 'base.html'%}
+{% block content %}
+	<div class="w3-row-padding">
+		<div class="w3-twothird">
+			<table class="w3-table-all">
+				<tr>
+					<th>IDNO</th>
+					<th>LASTNAME</th>
+					<th>FIRSTNAME</th>
+					<th>POSITION</th>
+					<th>RATE/DAY</th>
+					<th>DAYS WORK</th>
+					<th>TOTAL</th>
+					<th>ACTION</th>
+				</tr>
+				{% for employee in employees %}
+				<tr>
+					<td>{{ employee['idno'] }}</td>
+					<td>{{ employee['lastname'] }}</td>
+					<td>{{ employee['firstname'] }}</td>
+					<td>{{ employee['position'] }}</td>
+					<td>{{ employee['rate_per_day'] }}</td>
+					<td>{{ employee['days_work'] }}</td>
+					<td>{{ employee['total'] }}</td>
+					<td>
+						<button onclick="editEmployee('{{ employee['id'] }}')" class="w3-button w3-blue">&#9998;</button>
+						<button onclick="deleteEmployee('{{ employee['id'] }}')" class="w3-button w3-red">&times;</button>
+					</td>
+				</tr>
+				{% endfor %}
+			</table>
+		</div>
+		<div class="w3-third w3-container">
+			<div class="w3-center">
+				<img width="100px" src="{{ url_for('static',filename='image/usericon.png')}}">
+			</div>
+			<div class="w3-card-4 w3-round-xlarge w3-padding">
+				<form action="{{ url_for('add_employee') }}" method="POST">
+					<p>
+						<label><b>IDNO</b></label>
+						<input type="text" name="idno" id="idno" class="w3-input" required>
+					</p>
+					<p>
+						<label><b>LASTNAME</b></label>
+						<input type="text" name="lastname" id="lastname" class="w3-input" required>
+					</p>
+					<p>
+						<label><b>FIRSTNAME</b></label>
+						<input type="text" name="firstname" id="firstname" class="w3-input" required>
+					</p>
+					<p>
+						<label><b>POSITION</b></label>
+						<input type="text" name="position" id="position" class="w3-input" required>
+					</p>
+					<p>
+						<label><b>RATE PER DAY</b></label>
+						<input type="number" step="0.01" name="rate_per_day" id="rate_per_day" class="w3-input" required>
+					</p>
+					<p>
+						<input type="reset" value="&times; CANCEL" class="w3-button w3-red"> 
+						<input type="submit" value="&#128427; SAVE" class="w3-button w3-blue"> 
+					</p>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal for editing employee -->
+	<div id="editModal" class="w3-modal">
+		<div class="w3-modal-content w3-card-4 w3-animate-zoom" style="max-width:600px">
+			<header class="w3-container w3-blue">
+				<span onclick="document.getElementById('editModal').style.display='none'" 
+					class="w3-button w3-display-topright">&times;</span>
+				<h3>ADD DAYS WORK</h3>
+			</header>
+
+			<div class="w3-container">
+				<div class="w3-row-padding w3-margin-top">
+					<div class="w3-half">
+						<p><label>IDNO:</label>
+						<span id="modal_idno" class="w3-input w3-border w3-light-grey" style="background:readonly!important;" readonly></span></p>
+						
+						<p><label>LASTNAME:</label>
+						<span id="modal_lastname" class="w3-input w3-border w3-light-grey" readonly></span></p>
+						
+						<p><label>FIRSTNAME:</label>
+						<span id="modal_firstname" class="w3-input w3-border w3-light-grey" readonly></span></p>
+						
+						<p><label>POSITION:</label>
+						<span id="modal_position" class="w3-input w3-border w3-light-grey" readonly></span></p>
+						
+						<p><label>RATE/DAY:</label>
+						<span id="modal_rate" class="w3-input w3-border w3-light-grey" readonly></span></p>
+					</div>
+					<div class="w3-half">
+						<p><label>DAYS WORK:</label>
+						<input type="number" id="modal_days_work" class="w3-input w3-border" step="0.5" min="0" onchange="calculateTotal()"></p>
+						
+						<p><label>TOTAL:</label>
+						<span id="modal_total" class="w3-input w3-border w3-light-grey" readonly></span></p>
+					</div>
+				</div>
+			</div>
+
+			<div class="w3-container w3-padding-16">
+				<button onclick="document.getElementById('editModal').style.display='none'" 
+					class="w3-button w3-red w3-left">Cancel</button>
+				<button onclick="saveWorkDays()" 
+					class="w3-button w3-blue w3-right">Save</button>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentEmployeeId = null;
+let currentRate = 0;
+
+function editEmployee(id) {
+    currentEmployeeId = id;
+    const row = document.querySelector(`button[onclick="editEmployee('${id}')"]`).closest('tr');
+    const cells = row.cells;
+    
+    document.getElementById('modal_idno').textContent = cells[0].textContent;
+    document.getElementById('modal_lastname').textContent = cells[1].textContent;
+    document.getElementById('modal_firstname').textContent = cells[2].textContent;
+    document.getElementById('modal_position').textContent = cells[3].textContent;
+    document.getElementById('modal_rate').textContent = cells[4].textContent;
+    currentRate = parseFloat(cells[4].textContent);
+    
+    document.getElementById('modal_days_work').value = cells[5].textContent;
+    document.getElementById('modal_total').textContent = cells[6].textContent;
+    
+    calculateTotal();
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function calculateTotal() {
+    const daysWork = parseFloat(document.getElementById('modal_days_work').value) || 0;
+    const total = daysWork * currentRate;
+    document.getElementById('modal_total').textContent = total.toFixed(2);
+}
+
+function saveWorkDays() {
+    if (currentEmployeeId === null) return;
+    
+    const daysWork = document.getElementById('modal_days_work').value;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/update_workdays/${currentEmployeeId}`;
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'days_work';
+    input.value = daysWork;
+    
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function deleteEmployee(id) {
+    if (confirm('Are you sure you want to delete this employee?')) {
+        window.location.href = `/delete/${id}`;
+    }
+}
+</script>
+{% endblock %}
