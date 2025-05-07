@@ -31,10 +31,11 @@
 			</table>
 		</div>
 		<div class="w3-third w3-container">
-			<div class="w3-center">
-				<img width="100px" src="{{ url_for('static',filename='image/usericon.png')}}">
-			</div>
 			<div class="w3-card-4 w3-round-xlarge w3-padding">
+				<h3 class="w3-center">ADD EMPLOYEE</h3>
+				<div class="w3-center">
+					<img width="100px" src='./static/image/usericon.png' alt="User Icon" class="w3-circle">
+				</div>
 				<form action="{{ url_for('add_employee') }}" method="POST">
 					<p>
 						<label><b>IDNO</b></label>
